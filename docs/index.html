@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Banana OS - Web Operating System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --banana-yellow: #FFE600;
+      --banana-accent: #FFCC00;
+      --banana-dark: #121316;
+      --surface-dark: rgba(22, 24, 30, 0.92);
+      --surface-glass: rgba(28, 30, 38, 0.75);
+      --border-subtle: rgba(255, 255, 255, 0.1);
+      --border-accent: rgba(255, 230, 0, 0.35);
+      --text-main: #f0f2f5;
+      --text-dim: #9aa0a6;
+      --danger: #ff4757;
+      --success: #2ed573;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--banana-dark);
+      color: var(--text-main);
+    }
+
+    /* Desktop Viewport */
+    #desktop {
+      width: 100vw;
+      height: calc(100vh - 48px);
+      position: relative;
+      background: 
+        radial-gradient(circle at 85% 15%, rgba(255, 230, 0, 0.12), transparent 35%),
+        radial-gradient(circle at 15% 85%, rgba(255, 204, 0, 0.08), transparent 40%),
+        linear-gradient(135deg, #090a0f 0%, #151821 100%);
+      overflow: hidden;
+    }
+
+    /* Desktop Shortcuts */
+    .desktop-icons {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 24px;
+      position: absolute;
+      z-index: 10;
+    }
+
+    .desktop-shortcut {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 80px;
+      cursor: pointer;
+      padding: 10px 4px;
+      border-radius: 8px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .desktop-shortcut:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .shortcut-icon {
+      font-size: 36px;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+    }
+
+    .shortcut-label {
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 6px;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+      color: #fff;
+    }
+
+    /* Taskbar */
+    #taskbar {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 48px;
+      background: rgba(14, 16, 21, 0.95);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      z-index: 10000;
+      gap: 12px;
+    }
+
+    #start-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--banana-yellow);
+      color: #121316;
+      border: none;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    #start-btn:hover {
+      background: var(--banana-accent);
+    }
+
+    #taskbar-pills {
+      display: flex;
+      flex: 1;
+      gap: 8px;
+      overflow-x: auto;
+    }
+
+    .taskbar-pill {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      color: var(--text-dim);
+      transition: all 0.15s;
+    }
+
+    .taskbar-pill.active {
+      background: rgba(255, 230, 0, 0.15);
+      border: 1px solid var(--banana-yellow);
+      color: var(--banana-yellow);
+    }
+
+    #tray-clock {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      padding: 0 10px;
+    }
+
+    /* Start Menu */
+    #start-menu {
+      position: fixed;
+      bottom: 56px;
+      left: 12px;
+      width: 300px;
+      background: rgba(18, 20, 26, 0.96);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border-accent);
+      border-radius: 12px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      overflow: hidden;
+      z-index: 10001;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+
+    #start-menu.hidden {
+      display: none;
+    }
+
+    .start-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(255, 230, 0, 0.08);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .banana-brand-title {
+      font-weight: 700;
+      color: var(--banana-yellow);
+      font-size: 16px;
+    }
+
+    .start-apps-list {
+      padding: 8px 0;
+    }
+
+    .start-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.15s;
+    }
+
+    .start-item:hover {
+      background: rgba(255, 230, 0, 0.12);
+      color: var(--banana-yellow);
+    }
+
+    /* Windows Engine */
+    .os-window {
+      position: absolute;
+      background: var(--surface-dark);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .os-window.active {
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 230, 0, 0.2);
+    }
+
+    .os-window.minimized {
+      display: none !important;
+    }
+
+    .os-window.maximized {
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: calc(100vh - 48px) !important;
+      border-radius: 0;
+    }
+
+    .window-header {
+      height: 38px;
+      background: rgba(255, 255, 255, 0.03);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: move;
+    }
+
+    .window-title {
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .window-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .win-btn {
+      width: 26px;
+      height: 22px;
+      border: none;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      transition: background 0.15s;
+    }
+
+    .win-btn:hover { background: rgba(255, 255, 255, 0.2); }
+    .win-btn.close-btn:hover { background: var(--danger); }
+
+    .window-body {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .window-resize-handle {
+      width: 16px;
+      height: 16px;
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      cursor: nwse-resize;
+      z-index: 100;
+    }
+
+    /* Guest Browser */
+    .browser-container { display: flex; flex-direction: column; width: 100%; height: 100%; }
+    .browser-toolbar { display: flex; gap: 8px; padding: 8px; background: rgba(0,0,0,0.4); align-items: center; }
+    .browser-toolbar select, .browser-toolbar input {
+      padding: 6px 10px; background: #0c0d12; border: 1px solid #333; color: #fff; border-radius: 4px; font-size: 13px;
+    }
+    .browser-toolbar input { flex: 1; }
+    .browser-toolbar button { padding: 6px 14px; background: #262933; color: #fff; border: 1px solid #444; border-radius: 4px; cursor: pointer; }
+    .browser-toolbar button.go-btn { background: var(--banana-yellow); color: #000; font-weight: bold; border: none; }
+    .browser-viewport { flex: 1; background: #fff; position: relative; }
+    .browser-iframe { width: 100%; height: 100%; border: none; }
+    .browser-loader { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--banana-yellow); display: none; }
+
+    /* VirtualBox */
+    .vbox-container { display: flex; flex-direction: column; height: 100%; background: #090a0f; }
+    .vbox-toolbar { display: flex; gap: 8px; padding: 8px 12px; background: rgba(255,255,255,0.03); align-items: center; border-bottom: 1px solid var(--border-subtle); }
+    .vbox-btn { padding: 6px 12px; background: #1f222c; color: #fff; border: 1px solid #333; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .vbox-btn:hover { background: #2a2e3d; }
+    .vbox-meters { margin-left: auto; display: flex; gap: 14px; font-size: 12px; font-family: monospace; }
+    .vbox-meter span { color: var(--banana-yellow); }
+    .vbox-display { flex: 1; padding: 16px; overflow-y: auto; font-family: "Courier New", Courier, monospace; font-size: 13px; color: #00ff66; display: flex; flex-direction: column; }
+    .vbox-screen { flex: 1; white-space: pre-wrap; word-break: break-all; }
+    .vbox-guest-cli { display: flex; gap: 8px; margin-top: 8px; }
+    .vbox-guest-input { flex: 1; background: transparent; border: none; color: #00ff66; font-family: monospace; outline: none; font-size: 13px; }
+
+    /* Terminal */
+    .terminal-container { width: 100%; height: 100%; background: #0b0c10; font-family: monospace; padding: 12px; display: flex; flex-direction: column; }
+    .terminal-body { flex: 1; overflow-y: auto; color: #4af626; font-size: 13px; }
+    .terminal-output { white-space: pre-wrap; line-height: 1.4; margin-bottom: 8px; }
+    .terminal-input-row { display: flex; gap: 8px; }
+    .terminal-prompt { color: var(--banana-yellow); font-weight: bold; }
+    .terminal-input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-family: monospace; font-size: 13px; }
+
+    /* Text Editor */
+    .editor-container { display: flex; flex-direction: column; height: 100%; }
+    .editor-toolbar { padding: 8px; display: flex; gap: 8px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border-subtle); }
+    .editor-filename { flex: 1; background: #111; border: 1px solid #333; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+    .editor-save-btn { padding: 6px 16px; background: var(--banana-yellow); border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
+    .editor-textarea { flex: 1; background: #13151b; color: #f0f2f5; border: none; padding: 14px; font-family: monospace; font-size: 14px; outline: none; resize: none; user-select: text; }
+
+    /* File Manager */
+    .fm-container { display: flex; flex-direction: column; height: 100%; background: #12141a; }
+    .fm-toolbar { display: flex; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border-subtle); }
+    .fm-toolbar button { padding: 6px 12px; background: #222530; color: #fff; border: 1px solid #333; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .fm-path { flex: 1; background: #0c0d12; border: 1px solid #333; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+    .fm-grid { flex: 1; padding: 18px; display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 18px; overflow-y: auto; }
+    .fm-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 10px 4px; border-radius: 8px; transition: background 0.15s; }
+    .fm-item:hover { background: rgba(255, 255, 255, 0.08); }
+    .fm-item-icon { font-size: 36px; }
+    .fm-item-name { font-size: 12px; margin-top: 6px; text-align: center; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+  <div id="desktop">
+    <!-- Desktop Shortcuts -->
+    <div class="desktop-icons">
+      <div class="desktop-shortcut" data-app="browser">
+        <div class="shortcut-icon">🌐</div>
+        <div class="shortcut-label">Browser</div>
+      </div>
+      <div class="desktop-shortcut" data-app="virtualbox">
+        <div class="shortcut-icon">📦</div>
+        <div class="shortcut-label">VirtualBox</div>
+      </div>
+      <div class="desktop-shortcut" data-app="terminal">
+        <div class="shortcut-icon">💻</div>
+        <div class="shortcut-label">Terminal</div>
+      </div>
+      <div class="desktop-shortcut" data-app="files">
+        <div class="shortcut-icon">📁</div>
+        <div class="shortcut-label">Files</div>
+      </div>
+      <div class="desktop-shortcut" data-app="editor">
+        <div class="shortcut-icon">📝</div>
+        <div class="shortcut-label">Editor</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start Menu -->
+  <div id="start-menu" class="hidden">
+    <div class="start-header">
+      <span style="font-size: 32px;">🍌</span>
+      <div>
+        <div class="banana-brand-title">Banana OS</div>
+        <small style="color: var(--text-dim);">v1.0 Standard Edition</small>
+      </div>
+    </div>
+    <div class="start-apps-list">
+      <div class="start-item" data-app="browser"><span>🌐</span> Guest Browser</div>
+      <div class="start-item" data-app="virtualbox"><span>📦</span> VirtualBox Sandbox</div>
+      <div class="start-item" data-app="terminal"><span>💻</span> Terminal Shell</div>
+      <div class="start-item" data-app="files"><span>📁</span> File Explorer</div>
+      <div class="start-item" data-app="editor"><span>📝</span> Notepad Editor</div>
+    </div>
+  </div>
+
+  <!-- Taskbar -->
+  <div id="taskbar">
+    <button id="start-btn">🍌 Start</button>
+    <div id="taskbar-pills"></div>
+    <div id="tray-clock">12:00 PM</div>
+  </div>
+
+  <script>
+    /* =====================================================================
+       1. VIRTUAL FILE SYSTEM (VFS)
+       ===================================================================== */
+    class VirtualFileSystem {
+      constructor() {
+        this.storageKey = 'banana_os_vfs_data';
+        this.root = this.load() || this.createDefaultStructure();
+      }
+
+      createDefaultStructure() {
+        const fs = {
+          name: '/',
+          type: 'dir',
+          children: {
+            'home': {
+              type: 'dir',
+              children: {
+                'banana': {
+                  type: 'dir',
+                  children: {
+                    'Desktop': {
+                      type: 'dir',
+                      children: {
+                        'welcome.txt': {
+                          type: 'file',
+                          content: 'Welcome to Banana OS!\nFully contained in a single offline HTML file.'
+                        }
+                      }
+                    },
+                    'Documents': {
+                      type: 'dir',
+                      children: {
+                        'notes.txt': {
+                          type: 'file',
+                          content: 'Features:\n- Sandboxed Guest Browser\n- VirtualBox Micro-Hypervisor\n- Shell with VFS persistence'
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            'bin': { type: 'dir', children: {} },
+            'etc': { type: 'dir', children: {} }
+          }
+        };
+        this.save(fs);
+        return fs;
+      }
+
+      load() {
+        try {
+          const raw = localStorage.getItem(this.storageKey);
+          return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
+      }
+
+      save(tree = this.root) {
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify(tree));
+        } catch (e) {
+          console.error('VFS write error:', e);
+        }
+      }
+
+      normalizePath(path, cwd = '/home/banana') {
+        let full = path.startsWith('/') ? path : `${cwd}/${path}`;
+        const parts = full.split('/').filter(Boolean);
+        const stack = [];
+        for (const p of parts) {
+          if (p === '.') continue;
+          if (p === '..') stack.pop();
+          else stack.push(p);
+        }
+        return '/' + stack.join('/');
+      }
+
+      resolveNode(path) {
+        const parts = path.split('/').filter(Boolean);
+        let curr = this.root;
+        for (const p of parts) {
+          if (curr.type !== 'dir' || !curr.children[p]) return null;
+          curr = curr.children[p];
+        }
+        return curr;
+      }
+
+      readFile(path, cwd) {
+        const p = this.normalizePath(path, cwd);
+        const node = this.resolveNode(p);
+        if (!node) throw new Error(`File not found: ${path}`);
+        if (node.type !== 'file') throw new Error(`Not a file: ${path}`);
+        return node.content;
+      }
+
+      writeFile(path, content, cwd) {
+        const p = this.normalizePath(path, cwd);
+        const parts = p.split('/').filter(Boolean);
+        const fileName = parts.pop();
+        const parentPath = '/' + parts.join('/');
+        const parent = this.resolveNode(parentPath);
+        if (!parent || parent.type !== 'dir') throw new Error(`Directory not found: ${parentPath}`);
+        parent.children[fileName] = { type: 'file', content };
+        this.save();
+      }
+
+      mkdir(path, cwd) {
+        const p = this.normalizePath(path, cwd);
+        const parts = p.split('/').filter(Boolean);
+        const dirName = parts.pop();
+        const parentPath = '/' + parts.join('/');
+        const parent = this.resolveNode(parentPath);
+        if (!parent || parent.type !== 'dir') throw new Error(`Path not found: ${parentPath}`);
+        if (parent.children[dirName]) throw new Error(`Target already exists: ${dirName}`);
+        parent.children[dirName] = { type: 'dir', children: {} };
+        this.save();
+      }
+
+      rm(path, cwd) {
+        const p = this.normalizePath(path, cwd);
+        if (p === '/') throw new Error('Cannot remove root directory');
+        const parts = p.split('/').filter(Boolean);
+        const target = parts.pop();
+        const parent = this.resolveNode('/' + parts.join('/'));
+        if (!parent || !parent.children[target]) throw new Error(`Not found: ${path}`);
+        delete parent.children[target];
+        this.save();
+      }
+
+      readDir(path, cwd) {
+        const p = this.normalizePath(path, cwd);
+        const node = this.resolveNode(p);
+        if (!node) throw new Error(`Path not found: ${path}`);
+        if (node.type !== 'dir') throw new Error(`Not a directory: ${path}`);
+        return Object.keys(node.children).map(name => ({
+          name,
+          type: node.children[name].type
+        }));
+      }
+    }
+
+    /* =====================================================================
+       2. WINDOW MANAGEMENT ENGINE (WM)
+       ===================================================================== */
+    class WindowManager {
+      constructor(desktop, pillsContainer) {
+        this.desktop = desktop;
+        this.pills = pillsContainer;
+        this.windows = new Map();
+        this.activeId = null;
+        this.zIndex = 100;
+      }
+
+      createWindow({ id, title, icon = '🍌', width = 640, height = 440, content }) {
+        if (this.windows.has(id)) {
+          this.bringToFront(id);
+          return this.windows.get(id);
+        }
+
+        const win = document.createElement('div');
+        win.className = 'os-window';
+        win.id = `win-${id}`;
+        win.style.width = `${width}px`;
+        win.style.height = `${height}px`;
+
+        const offset = (this.windows.size * 26) % 180 + 40;
+        win.style.top = `${offset}px`;
+        win.style.left = `${offset + 40}px`;
+        win.style.zIndex = ++this.zIndex;
+
+        win.innerHTML = `
+          <div class="window-header">
+            <div class="window-title"><span>${icon}</span> ${title}</div>
+            <div class="window-controls">
+              <button class="win-btn minimize-btn">—</button>
+              <button class="win-btn maximize-btn">□</button>
+              <button class="win-btn close-btn">✕</button>
+            </div>
+          </div>
+          <div class="window-body"></div>
+          <div class="window-resize-handle"></div>
+        `;
+
+        const body = win.querySelector('.window-body');
+        if (typeof content === 'string') body.innerHTML = content;
+        else if (content instanceof HTMLElement) body.appendChild(content);
+
+        this.desktop.appendChild(win);
+
+        const pill = document.createElement('div');
+        pill.className = 'taskbar-pill active';
+        pill.innerHTML = `<span>${icon}</span> ${title}`;
+        pill.addEventListener('click', () => this.toggleMinimize(id));
+        this.pills.appendChild(pill);
+
+        const instance = { id, element: win, pill, isMaximized: false, bounds: null };
+        this.windows.set(id, instance);
+        this.bringToFront(id);
+        this.setupEvents(instance);
+
+        return instance;
+      }
+
+      bringToFront(id) {
+        const win = this.windows.get(id);
+        if (!win) return;
+        win.element.style.zIndex = ++this.zIndex;
+        this.activeId = id;
+
+        this.windows.forEach(w => {
+          w.element.classList.remove('active');
+          w.pill.classList.remove('active');
+        });
+
+        win.element.classList.remove('minimized');
+        win.element.classList.add('active');
+        win.pill.classList.add('active');
+      }
+
+      toggleMinimize(id) {
+        const win = this.windows.get(id);
+        if (!win) return;
+
+        if (win.element.classList.contains('minimized')) {
+          win.element.classList.remove('minimized');
+          this.bringToFront(id);
+        } else if (this.activeId === id) {
+          win.element.classList.add('minimized');
+          win.pill.classList.remove('active');
+          this.activeId = null;
+        } else {
+          this.bringToFront(id);
+        }
+      }
+
+      toggleMaximize(id) {
+        const win = this.windows.get(id);
+        if (!win) return;
+        if (!win.isMaximized) {
+          win.bounds = {
+            top: win.element.style.top,
+            left: win.element.style.left,
+            width: win.element.style.width,
+            height: win.element.style.height
+          };
+          win.element.classList.add('maximized');
+          win.isMaximized = true;
+        } else {
+          win.element.classList.remove('maximized');
+          win.element.style.top = win.bounds.top;
+          win.element.style.left = win.bounds.left;
+          win.element.style.width = win.bounds.width;
+          win.element.style.height = win.bounds.height;
+          win.isMaximized = false;
+        }
+      }
+
+      closeWindow(id) {
+        const win = this.windows.get(id);
+        if (!win) return;
+        win.element.remove();
+        win.pill.remove();
+        this.windows.delete(id);
+      }
+
+      setupEvents(win) {
+        const header = win.element.querySelector('.window-header');
+        const handle = win.element.querySelector('.window-resize-handle');
+
+        win.element.addEventListener('mousedown', () => this.bringToFront(win.id));
+        win.element.querySelector('.minimize-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleMinimize(win.id);
+        });
+        win.element.querySelector('.maximize-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleMaximize(win.id);
+        });
+        win.element.querySelector('.close-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.closeWindow(win.id);
+        });
+
+        // Window Dragging
+        header.addEventListener('mousedown', (e) => {
+          if (win.isMaximized) return;
+          const startX = e.clientX, startY = e.clientY;
+          const initLeft = win.element.offsetLeft, initTop = win.element.offsetTop;
+          
+          // Disable iframe pointer events during drag to prevent drag-stutter
+          document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'none');
+
+          const onMove = (ev) => {
+            win.element.style.left = `${Math.max(0, initLeft + (ev.clientX - startX))}px`;
+            win.element.style.top = `${Math.max(0, initTop + (ev.clientY - startY))}px`;
+          };
+
+          const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'auto');
+          };
+
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        });
+
+        // Window Resizing
+        handle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          const startX = e.clientX, startY = e.clientY;
+          const initW = win.element.offsetWidth, initH = win.element.offsetHeight;
+          document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'none');
+
+          const onMove = (ev) => {
+            win.element.style.width = `${Math.max(280, initW + (ev.clientX - startX))}px`;
+            win.element.style.height = `${Math.max(180, initH + (ev.clientY - startY))}px`;
+          };
+
+          const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'auto');
+          };
+
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        });
+      }
+    }
+
+    /* =====================================================================
+       3. APPLICATIONS
+       ===================================================================== */
+    
+    // GUEST PROXY BROWSER
+    function launchBrowser(wm) {
+      const container = document.createElement('div');
+      container.className = 'browser-container';
+      container.innerHTML = `
+        <div class="browser-toolbar">
+          <select class="browser-mode">
+            <option value="corsproxy">CORS Proxy Gateway</option>
+            <option value="allorigins">AllOrigins Proxy</option>
+            <option value="direct">Direct Embed</option>
+            <option value="local">Local Proxy (:3000)</option>
+          </select>
+          <input type="text" class="browser-url" value="https://en.wikipedia.org/wiki/Banana" />
+          <button class="go-btn">Go</button>
+          <button class="reload-btn">⟳</button>
+        </div>
+        <div class="browser-loader"></div>
+        <div class="browser-viewport">
+          <iframe class="browser-iframe" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+        </div>
+      `;
+
+      const urlInput = container.querySelector('.browser-url');
+      const modeSelect = container.querySelector('.browser-mode');
+      const iframe = container.querySelector('.browser-iframe');
+      const loader = container.querySelector('.browser-loader');
+
+      const navigate = async () => {
+        let raw = urlInput.value.trim();
+        if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+          raw = 'https://' + raw;
+          urlInput.value = raw;
+        }
+
+        const mode = modeSelect.value;
+        loader.style.display = 'block';
+
+        if (mode === 'direct') {
+          iframe.removeAttribute('srcdoc');
+          iframe.src = raw;
+          loader.style.display = 'none';
+          return;
+        }
+
+        if (mode === 'local') {
+          iframe.removeAttribute('srcdoc');
+          iframe.src = `http://localhost:3000/api/proxy?url=${encodeURIComponent(raw)}`;
+          loader.style.display = 'none';
+          return;
+        }
+
+        // In-Browser CORS bypass using public gateway and <base> injection
+        try {
+          let proxyEndpoint = mode === 'corsproxy'
+            ? `https://corsproxy.io/?${encodeURIComponent(raw)}`
+            : `https://api.allorigins.win/raw?url=${encodeURIComponent(raw)}`;
+
+          const resp = await fetch(proxyEndpoint);
+          let html = await resp.text();
+
+          // Inject base tag to resolve relative styling and assets
+          const parsed = new URL(raw);
+          const baseTag = `<base href="${parsed.origin}/">`;
+          if (html.includes('<head>')) {
+            html = html.replace('<head>', `<head>${baseTag}`);
+          } else {
+            html = baseTag + html;
+          }
+
+          iframe.srcdoc = html;
+        } catch (err) {
+          iframe.srcdoc = `
+            <div style="font-family:sans-serif;padding:30px;color:#333;text-align:center;">
+              <h2>Proxy Gateway Notice</h2>
+              <p>Could not fetch through current proxy: <b>${err.message}</b></p>
+              <p>Try switching to <i>AllOrigins</i> or testing standard sites like Wikipedia.</p>
+            </div>
+          `;
+        } finally {
+          loader.style.display = 'none';
+        }
+      };
+
+      container.querySelector('.go-btn').addEventListener('click', navigate);
+      container.querySelector('.reload-btn').addEventListener('click', navigate);
+      urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') navigate(); });
+
+      wm.createWindow({
+        id: 'browser',
+        title: 'Banana Guest Explorer',
+        icon: '🌐',
+        width: 800,
+        height: 520,
+        content: container
+      });
+
+      navigate();
+    }
+
+    // VIRTUALBOX SANDBOX ENVIRONMENT
+    function launchVirtualBox(wm) {
+      const container = document.createElement('div');
+      container.className = 'vbox-container';
+      container.innerHTML = `
+        <div class="vbox-toolbar">
+          <button class="vbox-btn btn-boot">▶ Power On</button>
+          <button class="vbox-btn btn-restart">↺ Reset</button>
+          <button class="vbox-btn btn-halt">■ Halt</button>
+          <div class="vbox-meters">
+            <div class="vbox-meter">CPU: <span class="cpu-val">0%</span></div>
+            <div class="vbox-meter">RAM: <span class="ram-val">128MB</span></div>
+          </div>
+        </div>
+        <div class="vbox-display">
+          <div class="vbox-screen">Banana VirtualBox x86 Hypervisor ready.\nClick 'Power On' to boot sandbox guest container.</div>
+          <div class="vbox-guest-cli" style="display: none;">
+            <span>guest#</span>
+            <input type="text" class="vbox-guest-input" placeholder="Type: help, uname, uptime, js <code...>" />
+          </div>
+        </div>
+      `;
+
+      const screen = container.querySelector('.vbox-screen');
+      const cliRow = container.querySelector('.vbox-guest-cli');
+      const input = container.querySelector('.vbox-guest-input');
+      const cpuVal = container.querySelector('.cpu-val');
+      const ramVal = container.querySelector('.ram-val');
+
+      let isRunning = false;
+      let timer = null;
+      let meterInterval = null;
+
+      const bootSteps = [
+        "BIOS-e820: [mem 0x0000000000000000-0x0000000007ffffff] usable (128 MB)",
+        "ACPI: Banana Hypervisor tables configured.",
+        "Linux version 6.6.1-banana-micro (gcc version 13.2.0)",
+        "Virtual CPU 0: Intel(R) Core(TM) i7 Virtual vCPU @ 2.60GHz",
+        "Mounted root squashfs sandbox container system.",
+        "INIT: Spawning runlevel 3 system shells...",
+        "Virtual container initialized. Ready."
+      ];
+
+      const startVM = () => {
+        if (isRunning) return;
+        isRunning = true;
+        cliRow.style.display = 'none';
+        screen.textContent = "Booting virtual container...\n";
+
+        let step = 0;
+        timer = setInterval(() => {
+          if (step < bootSteps.length) {
+            screen.textContent += bootSteps[step] + "\n";
+            step++;
+          } else {
+            clearInterval(timer);
+            cliRow.style.display = 'flex';
+            input.focus();
+          }
+        }, 150);
+
+        meterInterval = setInterval(() => {
+          cpuVal.textContent = `${Math.floor(Math.random() * 25 + 5)}%`;
+          ramVal.textContent = `${Math.floor(Math.random() * 8 + 128)}MB`;
+        }, 1200);
+      };
+
+      const stopVM = () => {
+        clearInterval(timer);
+        clearInterval(meterInterval);
+        isRunning = false;
+        cliRow.style.display = 'none';
+        screen.textContent = "Virtual Machine halted.";
+        cpuVal.textContent = '0%';
+        ramVal.textContent = '0MB';
+      };
+
+      container.querySelector('.btn-boot').addEventListener('click', startVM);
+      container.querySelector('.btn-halt').addEventListener('click', stopVM);
+      container.querySelector('.btn-restart').addEventListener('click', () => {
+        stopVM();
+        setTimeout(startVM, 300);
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const val = input.value.trim();
+          screen.textContent += `\nguest# ${val}\n`;
+          input.value = '';
+
+          const [cmd, ...rest] = val.split(' ');
+          if (cmd === 'help') {
+            screen.textContent += "Available: help, uname, uptime, free, js <expression>, clear\n";
+          } else if (cmd === 'uname') {
+            screen.textContent += "Linux banana-guest 6.6.1-banana x86_64 GNU/Linux\n";
+          } else if (cmd === 'uptime') {
+            screen.textContent += "up 0 days, 0:03, load average: 0.12, 0.08, 0.02\n";
+          } else if (cmd === 'free') {
+            screen.textContent += "              total        used        free\nMem:         131072       42180       88892\n";
+          } else if (cmd === 'clear') {
+            screen.textContent = '';
+          } else if (cmd === 'js') {
+            try {
+              const res = new Function(`return (${rest.join(' ')})`)();
+              screen.textContent += `=> ${res}\n`;
+            } catch (err) {
+              screen.textContent += `JS Error: ${err.message}\n`;
+            }
+          } else if (cmd) {
+            screen.textContent += `sh: command not found: ${cmd}\n`;
+          }
+          container.querySelector('.vbox-display').scrollTop = container.querySelector('.vbox-display').scrollHeight;
+        }
+      });
+
+      wm.createWindow({
+        id: 'virtualbox',
+        title: 'BananaBox Virtual Machine',
+        icon: '📦',
+        width: 660,
+        height: 420,
+        content: container
+      });
+    }
+
+    // TERMINAL APP
+    function launchTerminal(wm, vfs) {
+      let cwd = '/home/banana';
+      const container = document.createElement('div');
+      container.className = 'terminal-container';
+      container.innerHTML = `
+        <div class="terminal-body">
+          <div class="terminal-output">Banana OS Core Console [Version 1.0.0]\nType 'help' for available commands.\n</div>
+          <div class="terminal-input-row">
+            <span class="terminal-prompt">banana@os:${cwd}$</span>
+            <input type="text" class="terminal-input" autofocus />
+          </div>
+        </div>
+      `;
+
+      const output = container.querySelector('.terminal-output');
+      const input = container.querySelector('.terminal-input');
+      const prompt = container.querySelector('.terminal-prompt');
+      const body = container.querySelector('.terminal-body');
+
+      const refreshPrompt = () => { prompt.textContent = `banana@os:${cwd}$`; };
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const raw = input.value.trim();
+          output.textContent += `${prompt.textContent} ${raw}\n`;
+          input.value = '';
+
+          const [cmd, ...args] = raw.split(' ');
+
+          switch (cmd) {
+            case 'help':
+              output.textContent += "Commands: ls, cd, pwd, cat, touch, mkdir, rm, echo, clear, banana-info\n";
+              break;
+            case 'pwd':
+              output.textContent += `${cwd}\n`;
+              break;
+            case 'clear':
+              output.textContent = '';
+              break;
+            case 'ls':
+              try {
+                const items = vfs.readDir(args[0] || '.', cwd);
+                output.textContent += items.map(i => i.type === 'dir' ? `[${i.name}]` : i.name).join('  ') + '\n';
+              } catch (err) { output.textContent += `ls: ${err.message}\n`; }
+              break;
+            case 'cd':
+              try {
+                const target = vfs.normalizePath(args[0] || '/home/banana', cwd);
+                const node = vfs.resolveNode(target);
+                if (node && node.type === 'dir') {
+                  cwd = target;
+                  refreshPrompt();
+                } else output.textContent += `cd: not a directory\n`;
+              } catch (err) { output.textContent += `cd: ${err.message}\n`; }
+              break;
+            case 'cat':
+              if (!args[0]) output.textContent += "cat: missing operand\n";
+              else {
+                try { output.textContent += vfs.readFile(args[0], cwd) + '\n'; }
+                catch (err) { output.textContent += `cat: ${err.message}\n`; }
+              }
+              break;
+            case 'touch':
+              if (!args[0]) output.textContent += "touch: missing operand\n";
+              else {
+                try { vfs.writeFile(args[0], '', cwd); }
+                catch (err) { output.textContent += `touch: ${err.message}\n`; }
+              }
+              break;
+            case 'mkdir':
+              if (!args[0]) output.textContent += "mkdir: missing operand\n";
+              else {
+                try { vfs.mkdir(args[0], cwd); }
+                catch (err) { output.textContent += `mkdir: ${err.message}\n`; }
+              }
+              break;
+            case 'rm':
+              if (!args[0]) output.textContent += "rm: missing operand\n";
+              else {
+                try { vfs.rm(args[0], cwd); }
+                catch (err) { output.textContent += `rm: ${err.message}\n`; }
+              }
+              break;
+            case 'banana-info':
+              output.textContent += `
+   🍌  Banana OS Web Edition
+   Kernel: Sandboxed HTML5/ES6 Engine
+   Uptime: Session Active
+   Architecture: x86_64 Web Platform
+\n`;
+              break;
+            default:
+              if (cmd) output.textContent += `${cmd}: command not found\n`;
+          }
+          body.scrollTop = body.scrollHeight;
+        }
+      });
+
+      wm.createWindow({
+        id: 'terminal',
+        title: 'Terminal Shell',
+        icon: '💻',
+        width: 600,
+        height: 380,
+        content: container
+      });
+    }
+
+    // TEXT EDITOR APP
+    function launchEditor(wm, vfs, filePath = '/home/banana/Desktop/welcome.txt') {
+      const container = document.createElement('div');
+      container.className = 'editor-container';
+      container.innerHTML = `
+        <div class="editor-toolbar">
+          <input type="text" class="editor-filename" value="${filePath}" />
+          <button class="editor-save-btn">Save</button>
+        </div>
+        <textarea class="editor-textarea" spellcheck="false"></textarea>
+      `;
+
+      const input = container.querySelector('.editor-filename');
+      const textarea = container.querySelector('.editor-textarea');
+
+      try { textarea.value = vfs.readFile(filePath); } catch { textarea.value = ''; }
+
+      container.querySelector('.editor-save-btn').addEventListener('click', () => {
+        try {
+          vfs.writeFile(input.value.trim(), textarea.value);
+          alert('Saved successfully!');
+        } catch (e) { alert(e.message); }
+      });
+
+      wm.createWindow({
+        id: 'editor',
+        title: 'Notepad Editor',
+        icon: '📝',
+        width: 560,
+        height: 400,
+        content: container
+      });
+    }
+
+    // FILE MANAGER APP
+    function launchFileManager(wm, vfs) {
+      let cwd = '/home/banana';
+      const container = document.createElement('div');
+      container.className = 'fm-container';
+      container.innerHTML = `
+        <div class="fm-toolbar">
+          <button class="btn-up">↑ Up</button>
+          <button class="btn-new-file">+ File</button>
+          <button class="btn-new-dir">+ Folder</button>
+          <input type="text" class="fm-path" value="${cwd}" readonly />
+        </div>
+        <div class="fm-grid"></div>
+      `;
+
+      const grid = container.querySelector('.fm-grid');
+      const pathDisplay = container.querySelector('.fm-path');
+
+      const render = () => {
+        pathDisplay.value = cwd;
+        grid.innerHTML = '';
+        try {
+          const items = vfs.readDir(cwd);
+          items.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'fm-item';
+            el.innerHTML = `
+              <div class="fm-item-icon">${item.type === 'dir' ? '📁' : '📄'}</div>
+              <div class="fm-item-name">${item.name}</div>
+            `;
+            el.addEventListener('dblclick', () => {
+              if (item.type === 'dir') {
+                cwd = vfs.normalizePath(item.name, cwd);
+                render();
+              } else {
+                launchEditor(wm, vfs, vfs.normalizePath(item.name, cwd));
+              }
+            });
+            grid.appendChild(el);
+          });
+        } catch (e) {
+          grid.innerHTML = `<div style="color:var(--danger)">Error: ${e.message}</div>`;
+        }
+      };
+
+      container.querySelector('.btn-up').addEventListener('click', () => {
+        cwd = vfs.normalizePath('..', cwd);
+        render();
+      });
+
+      container.querySelector('.btn-new-file').addEventListener('click', () => {
+        const name = prompt('File name:');
+        if (name) {
+          vfs.writeFile(name, '', cwd);
+          render();
+        }
+      });
+
+      container.querySelector('.btn-new-dir').addEventListener('click', () => {
+        const name = prompt('Folder name:');
+        if (name) {
+          vfs.mkdir(name, cwd);
+          render();
+        }
+      });
+
+      render();
+
+      wm.createWindow({
+        id: 'files',
+        title: 'File Explorer',
+        icon: '📁',
+        width: 580,
+        height: 420,
+        content: container
+      });
+    }
+
+    /* =====================================================================
+       4. SYSTEM BOOTSTRAPPER
+       ===================================================================== */
+    document.addEventListener('DOMContentLoaded', () => {
+      const vfs = new VirtualFileSystem();
+      const wm = new WindowManager(
+        document.getElementById('desktop'),
+        document.getElementById('taskbar-pills')
+      );
+
+      const router = (app, param) => {
+        switch (app) {
+          case 'browser': launchBrowser(wm); break;
+          case 'virtualbox': launchVirtualBox(wm); break;
+          case 'terminal': launchTerminal(wm, vfs); break;
+          case 'editor': launchEditor(wm, vfs, param); break;
+          case 'files': launchFileManager(wm, vfs); break;
+        }
+        document.getElementById('start-menu').classList.add('hidden');
+      };
+
+      // Desktop Shortcuts
+      document.querySelectorAll('.desktop-shortcut').forEach(el => {
+        el.addEventListener('dblclick', () => router(el.getAttribute('data-app')));
+      });
+
+      // Start Menu
+      document.querySelectorAll('.start-item').forEach(el => {
+        el.addEventListener('click', () => router(el.getAttribute('data-app')));
+      });
+
+      const startBtn = document.getElementById('start-btn');
+      const startMenu = document.getElementById('start-menu');
+
+      startBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startMenu.classList.toggle('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!startMenu.contains(e.target) && e.target !== startBtn) {
+          startMenu.classList.add('hidden');
+        }
+      });
+
+      // System Tray Clock
+      const clockEl = document.getElementById('tray-clock');
+      const updateClock = () => {
+        const d = new Date();
+        clockEl.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      };
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      // Launch default desktop session
+      launchTerminal(wm, vfs);
+    });
+  </script>
+</body>
+</html>
